@@ -1,14 +1,12 @@
 :root{
-  --grape:#4B2E63;
---grape-dark:#341C46;
   --bg-deep:#241A1D;
   --bg-deep2:#331F22;
   --paper:#FBF3E2;
   --card:#FFFEFA;
   --ink:#2A2118;
   --ink-soft:#8A7A61;
-  --berry:#B3122B;
-  --berry-dark:#7A0E1F;
+  --grape:#4B2E63;
+  --grape-dark:#341C46;
   --gold:#E4A430;
   --line:#E7DBBC;
   --sage:#5B7A4A;
@@ -20,10 +18,10 @@ body{
   margin:0;
   background-color:var(--paper);
   background-image:
-    repeating-linear-gradient(0deg, rgba(179,18,43,.055) 0px, rgba(179,18,43,.055) 1.5px, transparent 1.5px, transparent 27px),
-    repeating-linear-gradient(90deg, rgba(179,18,43,.055) 0px, rgba(179,18,43,.055) 1.5px, transparent 1.5px, transparent 27px),
-    repeating-linear-gradient(0deg, rgba(179,18,43,.03) 0px, rgba(179,18,43,.03) 1px, transparent 1px, transparent 9px),
-    repeating-linear-gradient(90deg, rgba(179,18,43,.03) 0px, rgba(179,18,43,.03) 1px, transparent 1px, transparent 9px);
+    repeating-linear-gradient(0deg, rgba(75,46,99,.055) 0px, rgba(75,46,99,.055) 1.5px, transparent 1.5px, transparent 27px),
+    repeating-linear-gradient(90deg, rgba(75,46,99,.055) 0px, rgba(75,46,99,.055) 1.5px, transparent 1.5px, transparent 27px),
+    repeating-linear-gradient(0deg, rgba(75,46,99,.03) 0px, rgba(75,46,99,.03) 1px, transparent 1px, transparent 9px),
+    repeating-linear-gradient(90deg, rgba(75,46,99,.03) 0px, rgba(75,46,99,.03) 1px, transparent 1px, transparent 9px);
   color:var(--ink);
   font-family:'Inter',-apple-system,'Segoe UI',Roboto,sans-serif;
   min-height:100vh;
@@ -45,15 +43,15 @@ body{
   position:absolute;
   inset:0;
   background-image:
-    radial-gradient(circle at 8% 22%, var(--berry) 3px, transparent 4px),
-    radial-gradient(circle at 20% 58%, var(--berry-dark) 2.5px, transparent 3.5px),
+    radial-gradient(circle at 8% 22%, var(--grape) 3px, transparent 4px),
+    radial-gradient(circle at 20% 58%, var(--grape-dark) 2.5px, transparent 3.5px),
     radial-gradient(circle at 40% 12%, var(--gold) 2px, transparent 3px),
-    radial-gradient(circle at 58% 68%, var(--berry) 3px, transparent 4px),
+    radial-gradient(circle at 58% 68%, var(--grape) 3px, transparent 4px),
     radial-gradient(circle at 76% 28%, var(--gold) 2.5px, transparent 3.5px),
-    radial-gradient(circle at 88% 62%, var(--berry-dark) 2px, transparent 3px),
-    radial-gradient(circle at 32% 88%, var(--berry) 2.5px, transparent 3.5px),
+    radial-gradient(circle at 88% 62%, var(--grape-dark) 2px, transparent 3px),
+    radial-gradient(circle at 32% 88%, var(--grape) 2.5px, transparent 3.5px),
     radial-gradient(circle at 68% 6%, var(--gold) 2px, transparent 3px),
-    radial-gradient(circle at 95% 90%, var(--berry) 2px, transparent 3px);
+    radial-gradient(circle at 95% 90%, var(--grape) 2px, transparent 3px);
   opacity:.16;
   z-index:0;
 }
@@ -71,8 +69,8 @@ body{
   0%,100%{transform:rotate(-2.5deg);}
   50%{transform:rotate(2.5deg);}
 }
-.sprig .berry-cluster circle{fill:var(--berry)}
-.sprig .berry-cluster circle:nth-child(2){fill:var(--berry-dark)}
+.sprig .berry-cluster circle{fill:var(--grape)}
+.sprig .berry-cluster circle:nth-child(2){fill:var(--grape-dark)}
 @keyframes sprig-in{
   from{opacity:0; transform:translateY(-14px) rotate(-6deg);}
   to{opacity:.9; transform:translateY(0) rotate(0deg);}
@@ -122,9 +120,6 @@ body{
 }
 .dod-list{display:flex;gap:.55rem;flex-wrap:wrap}
 .dod-pill{display:inline-flex;align-items:center;gap:.45rem;background:rgba(0,0,0,.18);border-radius:999px;padding:.35rem .7rem}
-.dod-name{font-family:'Fraunces',Georgia,serif;font-size:1.05rem;font-weight:600}
-.dod-price{color:var(--gold);font-weight:700}
-
 @keyframes glow-pulse{
   0%,100%{box-shadow:0 0 0 rgba(228,164,48,0);}
   50%{box-shadow:0 0 16px rgba(228,164,48,.3);}
@@ -139,8 +134,8 @@ body{
   padding:.25rem .55rem;
   border-radius:6px;
 }
-.dod-name{font-family:'Fraunces',Georgia,serif;font-size:1.15rem;font-weight:600}
-.dod-price{color:var(--gold);font-weight:700;margin-left:auto}
+.dod-name{font-family:'Fraunces',Georgia,serif;font-size:1.05rem;font-weight:600}
+.dod-price{color:var(--gold);font-weight:700}
 
 /* ---------- CATEGORY NAV ---------- */
 .catnav{
@@ -169,8 +164,8 @@ body{
   transition:background .15s, color .15s, border-color .15s;
 }
 .catnav a.active{
-  background:var(--berry);
-  border-color:var(--berry);
+  background:var(--grape);
+  border-color:var(--grape);
   color:#fff;
 }
 
@@ -188,9 +183,9 @@ body{
   gap:.65rem;
   margin-bottom:1rem;
   padding-bottom:.6rem;
-  border-bottom:2px solid var(--berry);
+  border-bottom:2px solid var(--grape);
 }
-.cat-head svg{width:28px;height:28px;flex:none;color:var(--berry)}
+.cat-head svg{width:28px;height:28px;flex:none;color:var(--grape)}
 .cat-head h2{
   font-family:'Fraunces',Georgia,serif;
   font-size:1.5rem;
@@ -213,7 +208,7 @@ body{
 .item .name{flex:1;line-height:1.35;font-weight:500}
 .item .star{color:var(--gold);margin-right:.35rem}
 .item .meta{font-size:.78rem;color:var(--ink-soft);white-space:nowrap}
-.item .price{font-weight:700;white-space:nowrap;color:var(--berry)}
+.item .price{font-weight:700;white-space:nowrap;color:var(--grape)}
 
 .empty{
   text-align:center;
@@ -226,8 +221,7 @@ body{
   position:fixed;
   bottom:1.2rem;
   right:1.2rem;
-  display:none;              /* добавить эту строку */
-  background:var(--berry);
+  background:var(--grape);
   color:#fff;
   border:none;
   border-radius:999px;
@@ -235,7 +229,7 @@ body{
   font-size:.85rem;
   font-weight:600;
   cursor:pointer;
-  box-shadow:0 6px 18px rgba(179,18,43,.35);
+  box-shadow:0 6px 18px rgba(75,46,99,.35);
   z-index:20;
 }
 
@@ -271,7 +265,7 @@ input,select,button.btn{
 }
 input{flex:1;min-width:90px}
 
-button.btn{cursor:pointer;background:var(--berry);color:#fff;border:none;font-weight:600}
+button.btn{cursor:pointer;background:var(--grape);color:#fff;border:none;font-weight:600}
 button.btn.ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line);font-weight:500}
 button.btn.small{padding:.35rem .55rem;font-size:.78rem}
 button.btn.star-toggle{background:transparent;border:1px solid var(--line);color:var(--ink-soft)}
@@ -299,7 +293,6 @@ button.btn.star-toggle.on{background:var(--gold);border-color:var(--gold);color:
   .hero{padding:2.6rem 1.2rem 2rem;}
   .hero h1{font-size:2.1rem;}
   .dish-of-day{width:100%;}
-  .dod-price{margin-left:0;}
   .item{padding:.75rem .6rem}
   .item .name{font-size:.93rem}
   .item .meta{font-size:.72rem}

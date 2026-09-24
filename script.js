@@ -1,6 +1,6 @@
 // ====== SETTINGS ======
 // Change this to your own admin password before publishing the site.
-const ADMIN_PASSWORD = "admin2026";
+const ADMIN_PASSWORD = "concord2026";
 const STORAGE_KEY = "concordMenuDays"; // { "2026-09-24": { categories: [...] }, ... }
 
 // ====== ICONS ======
@@ -119,21 +119,21 @@ function renderPublic() {
     return;
   }
 
-  // dish of the day
- let featured = [];
-doc.categories.forEach(c => (c.items || []).forEach(it => { if (it.featured) featured.push(it); }));
-const dod = document.getElementById("dishOfDay");
-if (featured.length) {
-  document.getElementById("dodLabel").textContent = featured.length > 1 ? "Блюда дня" : "Блюдо дня";
-  document.getElementById("dodList").innerHTML = featured.map(f => `
-    <span class="dod-pill">
-      <span class="dod-name">${esc(f.name)}</span>
-      <span class="dod-price">${esc(formatPrice(f.price))}</span>
-    </span>`).join("");
-  dod.hidden = false;
-} else {
-  dod.hidden = true;
-}
+  // dish of the day (can be more than one)
+  let featured = [];
+  doc.categories.forEach(c => (c.items || []).forEach(it => { if (it.featured) featured.push(it); }));
+  const dod = document.getElementById("dishOfDay");
+  if (featured.length) {
+    document.getElementById("dodLabel").textContent = featured.length > 1 ? "Блюда дня" : "Блюдо дня";
+    document.getElementById("dodList").innerHTML = featured.map(f => `
+      <span class="dod-pill">
+        <span class="dod-name">${esc(f.name)}</span>
+        <span class="dod-price">${esc(formatPrice(f.price))}</span>
+      </span>`).join("");
+    dod.hidden = false;
+  } else {
+    dod.hidden = true;
+  }
 
   nav.innerHTML = doc.categories.map(c => `<a href="#${slug(c.name)}">${esc(c.name)}</a>`).join("");
 
@@ -226,11 +226,11 @@ function bindAdminEvents() {
       renderAdmin();
     }
     if (e.target.classList.contains("star-toggle")) {
-  const row = e.target.closest(".aitem");
-  const ci = row.dataset.ci, ii = row.dataset.ii;
-  currentCats[ci].items[ii].featured = !currentCats[ci].items[ii].featured;
-  renderAdmin();
-}
+      const row = e.target.closest(".aitem");
+      const ci = row.dataset.ci, ii = row.dataset.ii;
+      currentCats[ci].items[ii].featured = !currentCats[ci].items[ii].featured;
+      renderAdmin();
+    }
   });
 }
 
@@ -247,15 +247,6 @@ document.addEventListener("DOMContentLoaded", () => {
   bindAdminEvents();
   refreshDishList();
 
-
-  // показать кнопку только тем, кто зашёл по ссылке ?admin=1 (запоминается в браузере)
-  const params = new URLSearchParams(location.search);
-  if (params.has("admin")) localStorage.setItem("kalinkaAdminAccess", "1");
-  if (localStorage.getItem("kalinkaAdminAccess") === "1") {
-    document.getElementById("adminBtn").style.display = "block";
-  }
-
-  // ...остальной код без изменений
   const overlay = document.getElementById("overlay");
   const loginBox = document.getElementById("loginBox");
   const editBox = document.getElementById("editBox");
@@ -264,7 +255,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("adminBtn").onclick = () => {
     overlay.classList.add("open");
-    if (sessionStorage.getItem("kalinkaAdmin") === "1") {
+    if (sessionStorage.getItem("concordAdmin") === "1") {
       loginBox.style.display = "none";
       editBox.style.display = "block";
       loadDayIntoAdmin(dateInput.value);
@@ -279,7 +270,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("loginBtn").onclick = () => {
     const val = document.getElementById("adminPass").value;
     if (val === ADMIN_PASSWORD) {
-      sessionStorage.setItem("kalinkaAdmin", "1");
+      sessionStorage.setItem("concordAdmin", "1");
       loginBox.style.display = "none";
       editBox.style.display = "block";
       loadDayIntoAdmin(dateInput.value);
@@ -289,7 +280,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   document.getElementById("logoutBtn").onclick = () => {
-    sessionStorage.removeItem("kalinkaAdmin");
+    sessionStorage.removeItem("concordAdmin");
     overlay.classList.remove("open");
   };
 
