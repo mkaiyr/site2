@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Concord — меню на сегодня</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<section class="hero">
+  <div class="berries" aria-hidden="true">
+    <svg viewBox="0 0 120 160" class="sprig">
+      <path d="M60 155 C58 110 62 70 60 20" stroke="#5B7A4A" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M60 60 C40 45 28 48 18 40" stroke="#5B7A4A" stroke-width="2.5" fill="none"/>
+      <path d="M60 90 C82 76 92 78 102 68" stroke="#5B7A4A" stroke-width="2.5" fill="none"/>
+      <g class="berry-cluster">
+        <circle cx="16" cy="36" r="7"/><circle cx="28" cy="30" r="7"/><circle cx="24" cy="46" r="7"/>
+        <circle cx="12" cy="50" r="6"/><circle cx="34" cy="44" r="6"/>
+      </g>
+      <g class="berry-cluster">
+        <circle cx="104" cy="64" r="7"/><circle cx="92" cy="58" r="7"/><circle cx="96" cy="74" r="7"/>
+        <circle cx="110" cy="78" r="6"/><circle cx="86" cy="70" r="6"/>
+      </g>
+      <g class="berry-cluster">
+        <circle cx="60" cy="14" r="7"/><circle cx="50" cy="8" r="6"/><circle cx="70" cy="8" r="6"/>
+      </g>
+    </svg>
+  </div>
+  <div class="hero-inner">
+    <p class="eyebrow">Столовая</p>
+    <h1>Concord</h1>
+    <p class="date" id="dateLabel">—</p>
+   <div class="dish-of-day" id="dishOfDay" hidden>
+  <span class="dod-label" id="dodLabel">Блюдо дня</span>
+  <div class="dod-list" id="dodList"></div>
+</div>
+  </div>
+</section>
+
+<nav class="catnav" id="catnav"></nav>
+<datalist id="dishlist"></datalist>
+
+<div class="wrap" id="menuWrap">
+  <div class="empty">Загрузка меню…</div>
+</div>
+
+<button class="fab" id="adminBtn">Панель управления</button>
+
+<div class="overlay" id="overlay">
+  <div class="admin-head">
+    <h2>Управление меню <span class="status" id="saveStatus"></span></h2>
+    <button class="btn ghost small" id="closeAdmin">Закрыть</button>
+  </div>
+  <div class="admin-body">
+
+    <div id="loginBox">
+      <p class="muted">Введите пароль администратора, чтобы редактировать меню.</p>
+      <div class="row">
+        <input type="password" id="adminPass" placeholder="Пароль">
+        <button class="btn" id="loginBtn">Войти</button>
+      </div>
+      <p class="muted small" id="loginError"></p>
+    </div>
+
+    <div id="editBox" style="display:none">
+      <div class="row">
+        <label style="align-self:center">Дата:</label>
+        <input type="date" id="dateInput">
+        <button class="btn small" id="loadDay">Открыть день</button>
+        <button class="btn ghost small" id="copyYesterday">Скопировать предыдущий день</button>
+      </div>
+
+      <div id="catsWrap"></div>
+
+      <div class="row">
+        <input id="newCatName" placeholder="Название новой категории">
+        <button class="btn" id="addCat">+ Категория</button>
+      </div>
+
+      <div class="row" style="margin-top:1rem">
+        <button class="btn" id="saveDay">Сохранить меню</button>
+        <button class="btn ghost" id="logoutBtn">Выйти</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
