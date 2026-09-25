@@ -105,6 +105,72 @@ body{
   from{opacity:0; transform:translateY(10px);}
   to{opacity:1; transform:translateY(0);}
 }
+.updated{
+  font-size:.82rem;
+  color:#B9AB8E;
+  margin:-1rem 0 1.2rem;
+}
+
+.weeknav{
+  display:flex;
+  gap:.5rem;
+  margin-bottom:1.4rem;
+  flex-wrap:wrap;
+}
+.weeknav .wk{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:.15rem;
+  min-width:52px;
+  padding:.5rem .4rem;
+  border-radius:12px;
+  border:1px solid rgba(246,237,221,.25);
+  background:rgba(255,255,255,.05);
+  color:#F6EDDD;
+  font-family:inherit;
+  cursor:pointer;
+  transition:background .15s, border-color .15s;
+}
+.weeknav .wk .wk-day{font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;opacity:.75}
+.weeknav .wk .wk-num{font-family:'Fraunces',Georgia,serif;font-size:1.15rem;font-weight:600}
+.weeknav .wk.is-today{border-color:var(--gold)}
+.weeknav .wk.active{background:var(--gold);border-color:var(--gold);color:#241A1D}
+.weeknav .wk.active .wk-day{opacity:.85}
+.weeknav .wk:hover{background:rgba(255,255,255,.12)}
+.weeknav .wk.active:hover{background:var(--gold)}
+
+.combo-box{
+  margin-top:.9rem;
+  background:rgba(91,122,74,.14);
+  border:1px solid rgba(91,122,74,.4);
+  border-radius:14px;
+  padding:.85rem 1.1rem;
+}
+.combo-label{
+  font-size:.7rem;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--sage);
+  font-weight:700;
+  background:rgba(91,122,74,.18);
+  padding:.25rem .55rem;
+  border-radius:6px;
+}
+.combo-list{display:flex;gap:.5rem;flex-wrap:wrap;margin:.6rem 0}
+.combo-pill{
+  font-size:.82rem;
+  background:rgba(0,0,0,.18);
+  border-radius:999px;
+  padding:.3rem .7rem;
+}
+.combo-total{
+  font-family:'Fraunces',Georgia,serif;
+  font-size:1.05rem;
+  font-weight:600;
+  color:var(--gold);
+}
+
 .dish-of-day{
   display:flex;
   align-items:center;
@@ -270,6 +336,14 @@ button.btn.ghost{background:transparent;color:var(--ink-soft);border:1px solid v
 button.btn.small{padding:.35rem .55rem;font-size:.78rem}
 button.btn.star-toggle{background:transparent;border:1px solid var(--line);color:var(--ink-soft)}
 button.btn.star-toggle.on{background:var(--gold);border-color:var(--gold);color:#fff}
+button.btn.combo-toggle{background:transparent;border:1px solid var(--line);color:var(--ink-soft)}
+button.btn.combo-toggle.on{background:var(--sage);border-color:var(--sage);color:#fff}
+button.btn.hide-toggle{background:transparent;border:1px solid var(--line);color:var(--ink-soft)}
+button.btn.hide-toggle.on{background:var(--ink-soft);border-color:var(--ink-soft);color:#fff}
+button.btn.ghost.danger{color:#B23B3B;border-color:#E6BBBB}
+button.btn.ghost.danger:hover{background:#FBEAEA}
+
+.aitem.row-hidden{opacity:.5}
 
 .acat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.9rem;margin-bottom:1rem}
 .acat-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem}
@@ -288,6 +362,20 @@ button.btn.star-toggle.on{background:var(--gold);border-color:var(--gold);color:
   .berries, .hero h1, .hero .date, .dish-of-day, .cat{animation:none !important; opacity:1 !important;}
 }
 
+/* ---------- TV MODE ---------- */
+body.tv-mode .catnav{position:static}
+body.tv-mode .fab{display:none}
+body.tv-mode .hero{padding:4rem 3rem 3rem}
+body.tv-mode .hero h1{font-size:clamp(3.5rem,6vw,5.5rem)}
+body.tv-mode .date{font-size:1.4rem}
+body.tv-mode .wrap{max-width:1400px;padding:2.5rem 3rem 4rem}
+body.tv-mode .cat-head h2{font-size:2.1rem}
+body.tv-mode .item .name{font-size:1.3rem}
+body.tv-mode .item .meta{font-size:1rem}
+body.tv-mode .item .price{font-size:1.3rem}
+body.tv-mode .dod-name,body.tv-mode .combo-pill{font-size:1.15rem}
+body.tv-mode .combo-total{font-size:1.4rem}
+
 @media (max-width:480px){
   .berries{width:92px; top:-4px;}
   .hero{padding:2.6rem 1.2rem 2rem;}
@@ -297,4 +385,9 @@ button.btn.star-toggle.on{background:var(--gold);border-color:var(--gold);color:
   .item .name{font-size:.93rem}
   .item .meta{font-size:.72rem}
   .item .price{font-size:.85rem}
+  .weeknav{gap:.35rem}
+  .weeknav .wk{min-width:44px;padding:.4rem .25rem}
+  .weeknav .wk .wk-num{font-size:1rem}
+  .aitem{flex-wrap:wrap}
+  .aitem input:nth-child(1){flex:1 1 100%}
 }

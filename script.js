@@ -1,7 +1,8 @@
 // ====== SETTINGS ======
 // Change this to your own admin password before publishing the site.
 const ADMIN_PASSWORD = "concord2026";
-const STORAGE_KEY = "concordMenuDays"; // { "2026-09-24": { categories: [...] }, ... }
+const STORAGE_KEY = "concordMenuDays"; // { "2026-09-24": { date, categories:[...], hidden, updatedAt }, ... }
+const LIBRARY_KEY = "concordDishLibrary"; // { "Суп мампар": { weight: "250", price: "490" }, ... }
 
 // ====== ICONS ======
 const ICONS = {
@@ -18,10 +19,10 @@ function iconFor(name) {
   const n = (name || "").toLowerCase();
   if (n.includes("суп") || n.includes("уха") || n.includes("холодник")) return ICONS.soup;
   if (n.includes("диет")) return ICONS.diet;
-  if (n.includes("десерт") || n.includes("торт") || n.includes("пирож")) return ICONS.dessert;
+  if (n.includes("десерт") || n.includes("торт") || n.includes("пирож") || n.includes("выпечк")) return ICONS.dessert;
   if (n.includes("салат")) return ICONS.salad;
   if (n.includes("гарнир")) return ICONS.side;
-  if (n.includes("напит") || n.includes("сок") || n.includes("чай")) return ICONS.drink;
+  if (n.includes("напит") || n.includes("сок") || n.includes("чай") || n.includes("компот")) return ICONS.drink;
   return ICONS.main;
 }
 
@@ -41,23 +42,14 @@ function formatPrice(p) {
   return /^\d+([.,]\d+)?$/.test(t) ? t + " ₸" : t;
 }
 
+function priceNum(p) {
+  const t = String(p || "").replace(",", ".").trim();
+  const n = parseFloat(t);
+  return isNaN(n) ? 0 : n;
+}
+
 function slug(s) {
   return "cat-" + (s || "").toLowerCase().replace(/[^a-zа-я0-9]+/gi, "-").replace(/^-+|-+$/g, "");
-}
-
-// ====== HELPERS ======
-function todayStr() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-function fmtDate(s) {
-  const [y, m, d] = s.split("-");
-  const dt = new Date(y, m - 1, d);
-  return dt.toLocaleDateString("ru-RU", { day: "numeric", month: "long", weekday: "long" });
 }
 
 function esc(s) {
@@ -66,6 +58,59 @@ function esc(s) {
   return div.innerHTML;
 }
 
+// ====== DATE HELPERS ======
+function toISO(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function todayStr() {
+  return toISO(new Date());
+}
+
+function parseISO(s) {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function fmtDate(s) {
+  const dt = parseISO(s);
+  return dt.toLocaleDateString("ru-RU", { day: "numeric", month: "long", weekday: "long" });
+}
+
+function fmtShort(s) {
+  const dt = parseISO(s);
+  return dt.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+}
+
+function fmtTime(iso) {
+  try {
+    return new Date(iso).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+  } catch (e) {
+    return "";
+  }
+}
+
+// Monday..Friday of the week containing `d`
+function weekdaysOf(d) {
+  const day = d.getDay(); // 0 Sun .. 6 Sat
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const monday = new Date(d);
+  monday.setDate(d.getDate() + diffToMonday);
+  const out = [];
+  for (let i = 0; i < 5; i++) {
+    const dt = new Date(monday);
+    dt.setDate(monday.getDate() + i);
+    out.push(toISO(dt));
+  }
+  return out;
+}
+
+const WEEKDAY_SHORT = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
+
+// ====== STORAGE ======
 function loadAllDays() {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
@@ -77,9 +122,6 @@ function loadAllDays() {
 function saveAllDays(days) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(days));
 }
-
-// ====== DISH LIBRARY (autocomplete + auto-fill for admin) ======
-const LIBRARY_KEY = "concordDishLibrary"; // { "Суп мампар": { weight: "250", price: "490" }, ... }
 
 function loadLibrary() {
   try {
@@ -103,26 +145,119 @@ function refreshDishList() {
   dl.innerHTML = Object.keys(lib).sort().map(n => `<option value="${esc(n)}">`).join("");
 }
 
+// ====== SEED / DEMO DATA ======
+function buildSeed() {
+  const today = todayStr();
+  const menu = {
+    date: today,
+    hidden: false,
+    updatedAt: new Date().toISOString(),
+    categories: [
+      { name: "Первое", items: [
+        { name: "Борщ", weight: "300", price: "450", featured: true, combo: true, hidden: false }
+      ]},
+      { name: "Второе", items: [
+        { name: "Курица с рисом", weight: "300", price: "700", featured: false, combo: true, hidden: false },
+        { name: "Котлета с пюре", weight: "280", price: "650", featured: false, combo: false, hidden: false }
+      ]},
+      { name: "Салат", items: [
+        { name: "Овощной салат", weight: "150", price: "350", featured: false, combo: true, hidden: false }
+      ]},
+      { name: "Напиток", items: [
+        { name: "Компот", weight: "250", price: "200", featured: false, combo: true, hidden: false },
+        { name: "Чай", weight: "250", price: "150", featured: false, combo: false, hidden: false }
+      ]}
+    ]
+  };
+  const days = {};
+  days[today] = menu;
+  const lib = {};
+  menu.categories.forEach(c => c.items.forEach(it => { lib[it.name] = { weight: it.weight, price: it.price }; }));
+  return { days, lib };
+}
+
+function ensureSeedData() {
+  const days = loadAllDays();
+  if (Object.keys(days).length === 0) {
+    const seed = buildSeed();
+    saveAllDays(seed.days);
+    localStorage.setItem(LIBRARY_KEY, JSON.stringify(seed.lib));
+  }
+}
+
 // ====== PUBLIC MENU ======
+let viewingDate = todayStr();
+
+function renderWeekNav() {
+  const nav = document.getElementById("weekNav");
+  const week = weekdaysOf(parseISO(viewingDate));
+  const today = todayStr();
+  nav.innerHTML = week.map(dateStr => {
+    const dt = parseISO(dateStr);
+    const label = WEEKDAY_SHORT[dt.getDay()];
+    const isToday = dateStr === today;
+    const isActive = dateStr === viewingDate;
+    return `<button type="button" class="wk${isActive ? " active" : ""}${isToday ? " is-today" : ""}" data-date="${dateStr}">
+      <span class="wk-day">${label}</span><span class="wk-num">${dt.getDate()}</span>
+    </button>`;
+  }).join("");
+  nav.querySelectorAll(".wk").forEach(btn => {
+    btn.onclick = () => {
+      viewingDate = btn.dataset.date;
+      renderPublic();
+    };
+  });
+}
+
 function renderPublic() {
   const wrap = document.getElementById("menuWrap");
   const nav = document.getElementById("catnav");
-  document.getElementById("dateLabel").textContent = fmtDate(todayStr());
+  const updatedLabel = document.getElementById("updatedLabel");
+  document.getElementById("dateLabel").textContent = fmtDate(viewingDate);
+
+  renderWeekNav();
 
   const days = loadAllDays();
-  const doc = days[todayStr()];
+  const doc = days[viewingDate];
+
+  const dod = document.getElementById("dishOfDay");
+  const combo = document.getElementById("comboBox");
 
   if (!doc || !doc.categories || !doc.categories.length) {
-    wrap.innerHTML = '<div class="empty">Меню на сегодня ещё не опубликовано.<br>Загляните чуть позже.</div>';
+    wrap.innerHTML = `<div class="empty">${viewingDate < todayStr() ? "Меню на этот день не было опубликовано." : "Меню на этот день пока не опубликовано."}</div>`;
     nav.innerHTML = "";
-    document.getElementById("dishOfDay").hidden = true;
+    dod.hidden = true;
+    combo.hidden = true;
+    updatedLabel.hidden = true;
     return;
   }
 
-  // dish of the day (can be more than one)
+  if (doc.hidden) {
+    wrap.innerHTML = `<div class="empty">Меню временно обновляется.<br>Загляните чуть позже.</div>`;
+    nav.innerHTML = "";
+    dod.hidden = true;
+    combo.hidden = true;
+    updatedLabel.hidden = true;
+    return;
+  }
+
+  if (doc.updatedAt) {
+    const sameDay = toISO(new Date(doc.updatedAt)) === todayStr();
+    updatedLabel.textContent = sameDay
+      ? `Меню обновлено сегодня в ${fmtTime(doc.updatedAt)}`
+      : `Меню обновлено ${fmtShort(toISO(new Date(doc.updatedAt)))} в ${fmtTime(doc.updatedAt)}`;
+    updatedLabel.hidden = false;
+  } else {
+    updatedLabel.hidden = true;
+  }
+
+  const visibleCats = doc.categories
+    .map(c => ({ name: c.name, items: (c.items || []).filter(it => !it.hidden) }))
+    .filter(c => c.items.length);
+
+  // dish of the day
   let featured = [];
-  doc.categories.forEach(c => (c.items || []).forEach(it => { if (it.featured) featured.push(it); }));
-  const dod = document.getElementById("dishOfDay");
+  visibleCats.forEach(c => c.items.forEach(it => { if (it.featured) featured.push(it); }));
   if (featured.length) {
     document.getElementById("dodLabel").textContent = featured.length > 1 ? "Блюда дня" : "Блюдо дня";
     document.getElementById("dodList").innerHTML = featured.map(f => `
@@ -135,12 +270,31 @@ function renderPublic() {
     dod.hidden = true;
   }
 
-  nav.innerHTML = doc.categories.map(c => `<a href="#${slug(c.name)}">${esc(c.name)}</a>`).join("");
+  // combo lunch total
+  let comboItems = [];
+  visibleCats.forEach(c => c.items.forEach(it => { if (it.combo) comboItems.push(it); }));
+  if (comboItems.length) {
+    document.getElementById("comboList").innerHTML = comboItems.map(it => `
+      <span class="combo-pill">${esc(it.name)} — ${esc(formatPrice(it.price))}</span>`).join("");
+    const total = comboItems.reduce((sum, it) => sum + priceNum(it.price), 0);
+    document.getElementById("comboTotal").textContent = `Итого при выборе полного обеда: ${total} ₸`;
+    combo.hidden = false;
+  } else {
+    combo.hidden = true;
+  }
 
-  wrap.innerHTML = doc.categories.map((c, ci) => `
+  if (!visibleCats.length) {
+    wrap.innerHTML = `<div class="empty">Меню на этот день пока не опубликовано.</div>`;
+    nav.innerHTML = "";
+    return;
+  }
+
+  nav.innerHTML = visibleCats.map(c => `<a href="#${slug(c.name)}">${esc(c.name)}</a>`).join("");
+
+  wrap.innerHTML = visibleCats.map((c, ci) => `
     <div class="cat" id="${slug(c.name)}" style="animation-delay:${ci * 90}ms">
       <div class="cat-head">${svg(c.name)}<h2>${esc(c.name)}</h2></div>
-      ${(c.items || []).map(it => `
+      ${c.items.map(it => `
         <div class="item${it.featured ? " featured" : ""}">
           <span class="name">${it.featured ? '<span class="star">★</span>' : ""}${esc(it.name)}</span>
           <span class="meta">${esc(formatWeight(it.weight))}</span>
@@ -168,26 +322,38 @@ function setupNavHighlight() {
 
 // ====== ADMIN ======
 let currentCats = [];
+let currentHidden = false;
 let editingDate = todayStr();
 
 function renderAdmin() {
   document.getElementById("catsWrap").innerHTML = currentCats.map((c, ci) => `
     <div class="acat">
       <div class="acat-title">
-        <input value="${esc(c.name)}" data-ci="${ci}" class="catname">
+        <input value="${esc(c.name)}" data-ci="${ci}" class="catname" list="catlist">
         <button class="btn ghost small delcat" data-ci="${ci}">Удалить категорию</button>
       </div>
       ${(c.items || []).map((it, ii) => `
-        <div class="aitem" data-ci="${ci}" data-ii="${ii}">
+        <div class="aitem${it.hidden ? " row-hidden" : ""}" data-ci="${ci}" data-ii="${ii}">
           <input placeholder="Блюдо" value="${esc(it.name)}" class="itname" list="dishlist">
           <input placeholder="Вес, напр. 250" value="${esc(it.weight || "")}" class="itweight">
           <input placeholder="Цена, напр. 990" value="${esc(it.price || "")}" class="itprice">
           <button class="btn small star-toggle${it.featured ? " on" : ""}" title="Блюдо дня">★</button>
-          <button class="btn ghost small delitem">✕</button>
+          <button class="btn small combo-toggle${it.combo ? " on" : ""}" title="Входит в комплексный обед">🍽</button>
+          <button class="btn small hide-toggle${it.hidden ? " on" : ""}" title="Скрыть блюдо">👁</button>
+          <button class="btn ghost small delitem" title="Удалить">✕</button>
         </div>`).join("")}
       <button class="btn ghost small additem" data-ci="${ci}">+ Блюдо</button>
     </div>`).join("");
   refreshDishList();
+  updateHideDayButton();
+}
+
+function updateHideDayButton() {
+  const btn = document.getElementById("toggleHideDay");
+  const note = document.getElementById("dayHiddenNote");
+  if (!btn) return;
+  btn.textContent = currentHidden ? "Показать меню на этот день" : "Скрыть меню на этот день";
+  note.textContent = currentHidden ? "Сейчас на сайте: «Меню временно обновляется»" : "";
 }
 
 function bindAdminEvents() {
@@ -213,22 +379,32 @@ function bindAdminEvents() {
 
   cw.addEventListener("click", e => {
     if (e.target.classList.contains("delcat")) {
-      currentCats.splice(e.target.dataset.ci, 1);
+      currentCats.splice(Number(e.target.dataset.ci), 1);
       renderAdmin();
+      return;
     }
     if (e.target.classList.contains("additem")) {
-      currentCats[e.target.dataset.ci].items.push({ name: "", weight: "", price: "", featured: false });
+      currentCats[Number(e.target.dataset.ci)].items.push({ name: "", weight: "", price: "", featured: false, combo: false, hidden: false });
       renderAdmin();
+      return;
     }
+    const row = e.target.closest(".aitem");
+    if (!row) return;
+    const ci = Number(row.dataset.ci), ii = Number(row.dataset.ii);
     if (e.target.classList.contains("delitem")) {
-      const row = e.target.closest(".aitem");
-      currentCats[row.dataset.ci].items.splice(row.dataset.ii, 1);
+      currentCats[ci].items.splice(ii, 1);
       renderAdmin();
     }
     if (e.target.classList.contains("star-toggle")) {
-      const row = e.target.closest(".aitem");
-      const ci = row.dataset.ci, ii = row.dataset.ii;
       currentCats[ci].items[ii].featured = !currentCats[ci].items[ii].featured;
+      renderAdmin();
+    }
+    if (e.target.classList.contains("combo-toggle")) {
+      currentCats[ci].items[ii].combo = !currentCats[ci].items[ii].combo;
+      renderAdmin();
+    }
+    if (e.target.classList.contains("hide-toggle")) {
+      currentCats[ci].items[ii].hidden = !currentCats[ci].items[ii].hidden;
       renderAdmin();
     }
   });
@@ -237,12 +413,24 @@ function bindAdminEvents() {
 function loadDayIntoAdmin(dateStr) {
   editingDate = dateStr;
   const days = loadAllDays();
-  currentCats = (days[dateStr] && days[dateStr].categories) || [];
+  const doc = days[dateStr];
+  currentCats = (doc && doc.categories) || [];
+  currentHidden = !!(doc && doc.hidden);
   renderAdmin();
+}
+
+// ====== TV MODE ======
+function applyTvMode() {
+  const params = new URLSearchParams(location.search);
+  if (params.get("tv") === "1") {
+    document.body.classList.add("tv-mode");
+  }
 }
 
 // ====== INIT ======
 document.addEventListener("DOMContentLoaded", () => {
+  ensureSeedData();
+  applyTvMode();
   renderPublic();
   bindAdminEvents();
   refreshDishList();
@@ -279,6 +467,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  document.getElementById("adminPass").addEventListener("keydown", e => {
+    if (e.key === "Enter") document.getElementById("loginBtn").click();
+  });
+
   document.getElementById("logoutBtn").onclick = () => {
     sessionStorage.removeItem("concordAdmin");
     overlay.classList.remove("open");
@@ -287,13 +479,17 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("loadDay").onclick = () => loadDayIntoAdmin(dateInput.value);
 
   document.getElementById("copyYesterday").onclick = () => {
-    const d = new Date(dateInput.value);
+    const d = parseISO(dateInput.value);
     d.setDate(d.getDate() - 1);
-    const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0"), day = String(d.getDate()).padStart(2, "0");
-    const prev = `${y}-${m}-${day}`;
+    const prev = toISO(d);
     const days = loadAllDays();
     currentCats = JSON.parse(JSON.stringify((days[prev] && days[prev].categories) || []));
     renderAdmin();
+  };
+
+  document.getElementById("toggleHideDay").onclick = () => {
+    currentHidden = !currentHidden;
+    updateHideDayButton();
   };
 
   document.getElementById("addCat").onclick = () => {
@@ -307,13 +503,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("saveDay").onclick = () => {
     const days = loadAllDays();
-    days[editingDate] = { date: editingDate, categories: currentCats };
+    days[editingDate] = {
+      date: editingDate,
+      categories: currentCats,
+      hidden: currentHidden,
+      updatedAt: new Date().toISOString()
+    };
     saveAllDays(days);
-    currentCats.forEach(c => c.items.forEach(it => rememberDish(it.name, it.weight, it.price)));
+    currentCats.forEach(c => (c.items || []).forEach(it => rememberDish(it.name, it.weight, it.price)));
     refreshDishList();
     const st = document.getElementById("saveStatus");
     st.textContent = "Сохранено ✓";
     setTimeout(() => (st.textContent = ""), 2000);
-    if (editingDate === todayStr()) renderPublic();
+    if (editingDate === viewingDate) renderPublic();
+  };
+
+  document.getElementById("restoreDefaults").onclick = () => {
+    if (!confirm("Это заменит все сохранённые меню демонстрационными данными. Продолжить?")) return;
+    const seed = buildSeed();
+    saveAllDays(seed.days);
+    localStorage.setItem(LIBRARY_KEY, JSON.stringify(seed.lib));
+    viewingDate = todayStr();
+    dateInput.value = todayStr();
+    loadDayIntoAdmin(dateInput.value);
+    refreshDishList();
+    renderPublic();
+    const st = document.getElementById("saveStatus");
+    st.textContent = "Восстановлено ✓";
+    setTimeout(() => (st.textContent = ""), 2000);
   };
 });

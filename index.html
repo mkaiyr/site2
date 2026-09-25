@@ -34,15 +34,35 @@
     <p class="eyebrow">Столовая</p>
     <h1>Concord</h1>
     <p class="date" id="dateLabel">—</p>
+    <p class="updated" id="updatedLabel" hidden></p>
+
+    <div class="weeknav" id="weekNav"></div>
+
     <div class="dish-of-day" id="dishOfDay" hidden>
       <span class="dod-label" id="dodLabel">Блюдо дня</span>
       <div class="dod-list" id="dodList"></div>
+    </div>
+
+    <div class="combo-box" id="comboBox" hidden>
+      <span class="combo-label">Комплексный обед</span>
+      <div class="combo-list" id="comboList"></div>
+      <div class="combo-total" id="comboTotal"></div>
     </div>
   </div>
 </section>
 
 <nav class="catnav" id="catnav"></nav>
 <datalist id="dishlist"></datalist>
+<datalist id="catlist">
+  <option value="Первое">
+  <option value="Второе">
+  <option value="Гарнир">
+  <option value="Салат">
+  <option value="Выпечка">
+  <option value="Напиток">
+  <option value="Десерт">
+  <option value="Другое">
+</datalist>
 
 <div class="wrap" id="menuWrap">
   <div class="empty">Загрузка меню…</div>
@@ -74,16 +94,27 @@
         <button class="btn ghost small" id="copyYesterday">Скопировать предыдущий день</button>
       </div>
 
+      <div class="row">
+        <button class="btn ghost small" id="toggleHideDay">Скрыть меню на этот день</button>
+        <span class="muted small" id="dayHiddenNote"></span>
+      </div>
+
       <div id="catsWrap"></div>
 
       <div class="row">
-        <input id="newCatName" placeholder="Название новой категории">
+        <input id="newCatName" placeholder="Название новой категории" list="catlist">
         <button class="btn" id="addCat">+ Категория</button>
       </div>
+
+      <p class="muted small">★ — блюдо дня. 🍽 — входит в комплексный обед (для расчёта «Итого»). 👁 — скрыть блюдо, не удаляя.</p>
 
       <div class="row" style="margin-top:1rem">
         <button class="btn" id="saveDay">Сохранить меню</button>
         <button class="btn ghost" id="logoutBtn">Выйти</button>
+      </div>
+
+      <div class="row" style="margin-top:1.4rem;border-top:1px solid var(--line);padding-top:1rem">
+        <button class="btn ghost small danger" id="restoreDefaults">Восстановить стандартное меню (демо)</button>
       </div>
     </div>
 
