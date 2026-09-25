@@ -11,8 +11,8 @@
 // а не секретностью этого ключа.
 // ============================================================
 
-const SUPABASE_URL = "https://YOUR-PROJECT-REF.supabase.co";
-const SUPABASE_ANON_KEY = "YOUR-ANON-PUBLIC-KEY";
+const SUPABASE_URL = "https://clebaiohxvkoplgnxmxx.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_88CeuKkdxxvFPDnSk0VqAQ_1xtxvtHp";
 const SUPABASE_CONFIGURED =
   !!SUPABASE_URL &&
   !!SUPABASE_ANON_KEY &&
