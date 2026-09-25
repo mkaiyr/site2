@@ -42,8 +42,6 @@
     <p class="date" id="dateLabel">—</p>
     <p class="updated" id="updatedLabel" hidden></p>
 
-    <div class="weeknav" id="weekNav"></div>
-
     <div class="dish-of-day" id="dishOfDay" hidden>
       <span class="dod-label" id="dodLabel">Блюдо дня</span>
       <div class="dod-list" id="dodList"></div>
@@ -58,75 +56,14 @@
 </section>
 
 <nav class="catnav" id="catnav"></nav>
-<datalist id="dishlist"></datalist>
-<datalist id="catlist">
-  <option value="Первое">
-  <option value="Второе">
-  <option value="Гарнир">
-  <option value="Салат">
-  <option value="Выпечка">
-  <option value="Напиток">
-  <option value="Десерт">
-  <option value="Другое">
-</datalist>
 
 <div class="wrap" id="menuWrap">
   <div class="empty">Загрузка меню…</div>
 </div>
 
-<button class="fab" id="adminBtn">Панель управления</button>
-
-<div class="overlay" id="overlay">
-  <div class="admin-head">
-    <h2>Управление меню <span class="status" id="saveStatus"></span></h2>
-    <button class="btn ghost small" id="closeAdmin">Закрыть</button>
-  </div>
-  <div class="admin-body">
-
-    <div id="loginBox">
-      <p class="muted">Введите пароль администратора, чтобы редактировать меню.</p>
-      <div class="row">
-        <input type="password" id="adminPass" placeholder="Пароль">
-        <button class="btn" id="loginBtn">Войти</button>
-      </div>
-      <p class="muted small" id="loginError"></p>
-    </div>
-
-    <div id="editBox" style="display:none">
-      <div class="row">
-        <label style="align-self:center">Дата:</label>
-        <input type="date" id="dateInput">
-        <button class="btn small" id="loadDay">Открыть день</button>
-        <button class="btn ghost small" id="copyYesterday">Скопировать предыдущий день</button>
-      </div>
-
-      <div class="row">
-        <button class="btn ghost small" id="toggleHideDay">Скрыть меню на этот день</button>
-        <span class="muted small" id="dayHiddenNote"></span>
-      </div>
-
-      <div id="catsWrap"></div>
-
-      <div class="row">
-        <input id="newCatName" placeholder="Название новой категории" list="catlist">
-        <button class="btn" id="addCat">+ Категория</button>
-      </div>
-
-      <p class="muted small">★ — блюдо дня. 🍽 — входит в комплексный обед (для расчёта «Итого»). 👁 — скрыть блюдо, не удаляя.</p>
-
-      <div class="row" style="margin-top:1rem">
-        <button class="btn" id="saveDay">Сохранить меню</button>
-        <button class="btn ghost" id="logoutBtn">Выйти</button>
-      </div>
-
-      <div class="row" style="margin-top:1.4rem;border-top:1px solid var(--line);padding-top:1rem">
-        <button class="btn ghost small danger" id="restoreDefaults">Восстановить стандартное меню (демо)</button>
-      </div>
-    </div>
-
-  </div>
-</div>
-
+<!-- Supabase client (UMD build) + shared config — must load before script.js -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./supabase-config.js"></script>
 <script src="./script.js"></script>
 </body>
 </html>

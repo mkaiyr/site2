@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Concord / Kablan — управление меню</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+<div class="admin-page">
+
+  <!-- Экран входа -->
+  <div class="login-screen" id="loginScreen">
+    <div class="login-card">
+      <h1>Управление меню</h1>
+      <p class="muted small">Вход только для сотрудников столовой.</p>
+      <div class="row">
+        <input type="email" id="loginEmail" placeholder="Email" autocomplete="username">
+      </div>
+      <div class="row">
+        <input type="password" id="loginPass" placeholder="Пароль" autocomplete="current-password">
+      </div>
+      <div class="row">
+        <button class="btn" id="loginBtn">Войти</button>
+      </div>
+      <p class="muted small" id="loginError"></p>
+    </div>
+  </div>
+
+  <!-- Панель управления (видна только после входа) -->
+  <div id="panel" style="display:none">
+    <div class="admin-head">
+      <h2>Управление меню <span class="status" id="saveStatus"></span></h2>
+      <div class="head-right">
+        <span class="who" id="whoAmI"></span>
+        <button class="btn ghost small" id="logoutBtn">Выйти</button>
+      </div>
+    </div>
+
+    <div class="admin-body">
+
+      <div class="row">
+        <label style="align-self:center">Столовая:</label>
+        <select id="cafeteriaSelect"></select>
+        <label style="align-self:center">Дата:</label>
+        <input type="date" id="dateInput">
+        <button class="btn small" id="loadDay">Открыть день</button>
+        <button class="btn ghost small" id="copyYesterday">Скопировать предыдущий день</button>
+      </div>
+
+      <div class="row">
+        <button class="btn ghost small" id="toggleHideDay">Скрыть меню на этот день</button>
+        <span class="muted small" id="dayHiddenNote"></span>
+      </div>
+
+      <div id="catsWrap"></div>
+
+      <div class="row">
+        <input id="newCatName" placeholder="Название новой категории" list="catlist">
+        <button class="btn" id="addCat">+ Категория</button>
+      </div>
+      <datalist id="catlist">
+        <option value="Первое">
+        <option value="Второе">
+        <option value="Гарнир">
+        <option value="Салат">
+        <option value="Выпечка">
+        <option value="Напиток">
+        <option value="Десерт">
+        <option value="Другое">
+      </datalist>
+      <datalist id="dishlist"></datalist>
+
+      <p class="muted small">★ — блюдо дня. 🍽 — входит в комплексный обед (для расчёта «Итого»). 👁 — скрыть блюдо, не удаляя.</p>
+
+      <div class="row" style="margin-top:1rem">
+        <button class="btn" id="saveDay">Сохранить меню</button>
+      </div>
+
+      <p class="muted small" style="margin-top:1.4rem;border-top:1px solid var(--line);padding-top:1rem">
+        Изменения сохраняются в общую базу данных сразу для всех устройств и всех администраторов.
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Supabase client (UMD build) + shared config — must load before admin.js -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./supabase-config.js"></script>
+<script src="./admin.js"></script>
+</body>
+</html>

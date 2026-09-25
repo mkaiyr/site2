@@ -1,15 +1,7 @@
-// ====== SETTINGS ======
-// Change this to your own admin password before publishing the site.
-const ADMIN_PASSWORD = "concord2026";
-const STORAGE_KEY = "concordMenuDays"; // { "2026-09-24": { date, categories:[...], hidden, updatedAt }, ... }
-const LIBRARY_KEY = "concordDishLibrary"; // { "Суп мампар": { weight: "250", price: "490" }, ... }
-
-// ====== CANTEENS ======
-// Add more canteens here later — the switcher and <h1> update themselves from this list.
-const CANTEENS = [
-  { id: "concord", name: "Concord" },
-  { id: "kablan", name: "Kablan" }
-];
+// This file talks to Supabase (see supabase-config.js, loaded before this file).
+// No menu data is stored in localStorage — everything comes from the shared database.
+// localStorage is used only for one thing: remembering which cafeteria this browser
+// last looked at, purely a display convenience, not menu data.
 const CANTEEN_KEY = "concordSelectedCanteen";
 
 // ====== ICONS ======
@@ -45,15 +37,8 @@ function formatWeight(w) {
 }
 
 function formatPrice(p) {
-  const t = String(p || "").trim();
-  if (!t) return "";
-  return /^\d+([.,]\d+)?$/.test(t) ? t + " ₸" : t;
-}
-
-function priceNum(p) {
-  const t = String(p || "").replace(",", ".").trim();
-  const n = parseFloat(t);
-  return isNaN(n) ? 0 : n;
+  if (p === null || p === undefined || p === "") return "";
+  return `${p} ₸`;
 }
 
 function slug(s) {
@@ -88,11 +73,6 @@ function fmtDate(s) {
   return dt.toLocaleDateString("ru-RU", { day: "numeric", month: "long", weekday: "long" });
 }
 
-function fmtShort(s) {
-  const dt = parseISO(s);
-  return dt.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
-}
-
 function fmtTime(iso) {
   try {
     return new Date(iso).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
@@ -101,146 +81,186 @@ function fmtTime(iso) {
   }
 }
 
-// Monday..Friday of the week containing `d`
-function weekdaysOf(d) {
-  const day = d.getDay(); // 0 Sun .. 6 Sat
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-  const monday = new Date(d);
-  monday.setDate(d.getDate() + diffToMonday);
-  const out = [];
-  for (let i = 0; i < 5; i++) {
-    const dt = new Date(monday);
-    dt.setDate(monday.getDate() + i);
-    out.push(toISO(dt));
+// ====== TV MODE ======
+function applyTvMode() {
+  const params = new URLSearchParams(location.search);
+  if (params.get("tv") === "1") {
+    document.body.classList.add("tv-mode");
   }
-  return out;
 }
 
-const WEEKDAY_SHORT = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
+// ====== LOCAL FALLBACK ======
+const LOCAL_MENU_KEY = "concordLocalMenuData";
+const DEFAULT_CAFETERIA_ID = "default";
 
-// ====== STORAGE ======
-function loadAllDays() {
+function getSeedMenu() {
+  return [
+    { id: "1", cafeteria_id: DEFAULT_CAFETERIA_ID, date: todayStr(), category: "Первое", name: "Борщ", weight: "300", price: 450, featured: true, combo: true, hidden: false, sort_order: 0 },
+    { id: "2", cafeteria_id: DEFAULT_CAFETERIA_ID, date: todayStr(), category: "Второе", name: "Курица с рисом", weight: "300", price: 700, featured: false, combo: true, hidden: false, sort_order: 1 },
+    { id: "3", cafeteria_id: DEFAULT_CAFETERIA_ID, date: todayStr(), category: "Второе", name: "Котлета с пюре", weight: "280", price: 650, featured: false, combo: false, hidden: false, sort_order: 2 },
+    { id: "4", cafeteria_id: DEFAULT_CAFETERIA_ID, date: todayStr(), category: "Салат", name: "Овощной салат", weight: "150", price: 350, featured: false, combo: true, hidden: false, sort_order: 3 },
+    { id: "5", cafeteria_id: DEFAULT_CAFETERIA_ID, date: todayStr(), category: "Напиток", name: "Компот", weight: "250", price: 200, featured: false, combo: true, hidden: false, sort_order: 4 },
+    { id: "6", cafeteria_id: DEFAULT_CAFETERIA_ID, date: todayStr(), category: "Напиток", name: "Чай", weight: "250", price: 150, featured: false, combo: false, hidden: false, sort_order: 5 }
+  ];
+}
+
+function getLocalMenuData() {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-  } catch (e) {
-    return {};
-  }
+    const raw = JSON.parse(localStorage.getItem(LOCAL_MENU_KEY) || "null");
+    if (raw && Array.isArray(raw)) return raw;
+  } catch (e) {}
+  const seed = getSeedMenu();
+  localStorage.setItem(LOCAL_MENU_KEY, JSON.stringify(seed));
+  return seed;
 }
 
-function saveAllDays(days) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(days));
+function getLocalMenuForDate(cafeteriaId, dateStr) {
+  const all = getLocalMenuData();
+  const filtered = all.filter(item => item.cafeteria_id === cafeteriaId && item.date === dateStr);
+  return filtered.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
 }
 
-function loadLibrary() {
+function saveLocalMenuForDate(cafeteriaId, dateStr, items, hidden) {
+  const all = getLocalMenuData();
+  const next = all.filter(item => !(item.cafeteria_id === cafeteriaId && item.date === dateStr));
+  const rows = items.map((item, index) => ({
+    id: item.id || `${cafeteriaId}-${dateStr}-${index}`,
+    cafeteria_id: cafeteriaId,
+    date: dateStr,
+    category: item.category,
+    name: item.name,
+    weight: item.weight || null,
+    price: item.price === null || item.price === undefined || item.price === "" ? null : Number(String(item.price).replace(",", ".")),
+    featured: !!item.featured,
+    combo: !!item.combo,
+    hidden: !!item.hidden,
+    sort_order: index
+  }));
+  next.push(...rows);
+  localStorage.setItem(LOCAL_MENU_KEY, JSON.stringify(next));
+  const status = { cafeteria_id: cafeteriaId, date: dateStr, hidden: !!hidden, updated_at: new Date().toISOString() };
+  localStorage.setItem(`concordLocalMenuStatus-${cafeteriaId}-${dateStr}`, JSON.stringify(status));
+}
+
+function getLocalMenuStatus(cafeteriaId, dateStr) {
   try {
-    return JSON.parse(localStorage.getItem(LIBRARY_KEY)) || {};
+    const raw = localStorage.getItem(`concordLocalMenuStatus-${cafeteriaId}-${dateStr}`);
+    return raw ? JSON.parse(raw) : { hidden: false, updated_at: new Date().toISOString() };
   } catch (e) {
-    return {};
+    return { hidden: false, updated_at: new Date().toISOString() };
   }
 }
 
-function rememberDish(name, weight, price) {
-  if (!name) return;
-  const lib = loadLibrary();
-  lib[name] = { weight: weight || "", price: price || "" };
-  localStorage.setItem(LIBRARY_KEY, JSON.stringify(lib));
-}
+// ====== STATE ======
+let cafeterias = [];
+let activeCafeteriaId = null;
+let realtimeChannel = null;
 
-function refreshDishList() {
-  const dl = document.getElementById("dishlist");
-  if (!dl) return;
-  const lib = loadLibrary();
-  dl.innerHTML = Object.keys(lib).sort().map(n => `<option value="${esc(n)}">`).join("");
-}
-
-// ====== SEED / DEMO DATA ======
-function buildSeed() {
-  const today = todayStr();
-  const menu = {
-    date: today,
-    hidden: false,
-    updatedAt: new Date().toISOString(),
-    categories: [
-      { name: "Первое", items: [
-        { name: "Борщ", weight: "300", price: "450", featured: true, combo: true, hidden: false }
-      ]},
-      { name: "Второе", items: [
-        { name: "Курица с рисом", weight: "300", price: "700", featured: false, combo: true, hidden: false },
-        { name: "Котлета с пюре", weight: "280", price: "650", featured: false, combo: false, hidden: false }
-      ]},
-      { name: "Салат", items: [
-        { name: "Овощной салат", weight: "150", price: "350", featured: false, combo: true, hidden: false }
-      ]},
-      { name: "Напиток", items: [
-        { name: "Компот", weight: "250", price: "200", featured: false, combo: true, hidden: false },
-        { name: "Чай", weight: "250", price: "150", featured: false, combo: false, hidden: false }
-      ]}
-    ]
-  };
-  const days = {};
-  days[today] = menu;
-  const lib = {};
-  menu.categories.forEach(c => c.items.forEach(it => { lib[it.name] = { weight: it.weight, price: it.price }; }));
-  return { days, lib };
-}
-
-function ensureSeedData() {
-  const days = loadAllDays();
-  if (Object.keys(days).length === 0) {
-    const seed = buildSeed();
-    saveAllDays(seed.days);
-    localStorage.setItem(LIBRARY_KEY, JSON.stringify(seed.lib));
+// ====== CANTEEN SWITCHER ======
+async function initCanteens() {
+  const select = document.getElementById("canteenSelect");
+  if (!sb) {
+    cafeterias = [{ id: DEFAULT_CAFETERIA_ID, name: "Concord" }];
+    select.innerHTML = cafeterias.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("");
+    const saved = localStorage.getItem("concordSelectedCanteen") || DEFAULT_CAFETERIA_ID;
+    select.value = saved;
+    select.addEventListener("change", () => selectCafeteria(select.value));
+    selectCafeteria(saved || DEFAULT_CAFETERIA_ID);
+    return;
   }
-}
+  const { data, error } = await sb.from("cafeterias").select("*").order("name", { ascending: true });
 
-// ====== PUBLIC MENU ======
-let viewingDate = todayStr();
-
-function renderWeekNav() {
-  const nav = document.getElementById("weekNav");
-  const week = weekdaysOf(parseISO(viewingDate));
-  const today = todayStr();
-  nav.innerHTML = week.map(dateStr => {
-    const dt = parseISO(dateStr);
-    const label = WEEKDAY_SHORT[dt.getDay()];
-    const isToday = dateStr === today;
-    const isActive = dateStr === viewingDate;
-    return `<button type="button" class="wk${isActive ? " active" : ""}${isToday ? " is-today" : ""}" data-date="${dateStr}">
-      <span class="wk-day">${label}</span><span class="wk-num">${dt.getDate()}</span>
-    </button>`;
-  }).join("");
-  nav.querySelectorAll(".wk").forEach(btn => {
-    btn.onclick = () => {
-      viewingDate = btn.dataset.date;
-      renderPublic();
-    };
-  });
-}
-
-function renderPublic() {
-  const wrap = document.getElementById("menuWrap");
-  const nav = document.getElementById("catnav");
-  const updatedLabel = document.getElementById("updatedLabel");
-  document.getElementById("dateLabel").textContent = fmtDate(viewingDate);
-
-  renderWeekNav();
-
-  const days = loadAllDays();
-  const doc = days[viewingDate];
-
-  const dod = document.getElementById("dishOfDay");
-  const combo = document.getElementById("comboBox");
-
-  if (!doc || !doc.categories || !doc.categories.length) {
-    wrap.innerHTML = `<div class="empty">${viewingDate < todayStr() ? "Меню на этот день не было опубликовано." : "Меню на этот день пока не опубликовано."}</div>`;
-    nav.innerHTML = "";
-    dod.hidden = true;
-    combo.hidden = true;
-    updatedLabel.hidden = true;
+  if (error || !data || !data.length) {
+    document.getElementById("menuWrap").innerHTML =
+      '<div class="empty">Не удалось загрузить список столовых.<br>Проверьте подключение к базе данных.</div>';
+    console.error("cafeterias load error", error);
     return;
   }
 
-  if (doc.hidden) {
+  cafeterias = data;
+  select.innerHTML = cafeterias.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("");
+
+  const saved = localStorage.getItem(CANTEEN_KEY);
+  const initial = cafeterias.some(c => c.id === saved) ? saved : cafeterias[0].id;
+  select.value = initial;
+
+  select.addEventListener("change", () => selectCafeteria(select.value));
+
+  selectCafeteria(initial);
+}
+
+function selectCafeteria(id) {
+  activeCafeteriaId = id;
+  localStorage.setItem(CANTEEN_KEY, id);
+
+  const canteen = cafeterias.find(c => c.id === id);
+  const title = document.getElementById("canteenTitle");
+  if (title && canteen) title.textContent = canteen.name;
+  const select = document.getElementById("canteenSelect");
+  if (select && select.value !== id) select.value = id;
+
+  if (!sb) {
+    loadAndRenderMenu();
+    return;
+  }
+
+  subscribeRealtime(id);
+  loadAndRenderMenu();
+}
+
+// ====== REALTIME SYNC ======
+// Any admin's change to this cafeteria's menu is pushed to every open tab/device instantly.
+function subscribeRealtime(cafeteriaId) {
+  if (!sb) return;
+  if (realtimeChannel) {
+    sb.removeChannel(realtimeChannel);
+    realtimeChannel = null;
+  }
+  realtimeChannel = sb
+    .channel("public-menu-" + cafeteriaId)
+    .on("postgres_changes", { event: "*", schema: "public", table: "menu_items", filter: `cafeteria_id=eq.${cafeteriaId}` }, () => loadAndRenderMenu())
+    .on("postgres_changes", { event: "*", schema: "public", table: "menu_day_status", filter: `cafeteria_id=eq.${cafeteriaId}` }, () => loadAndRenderMenu())
+    .subscribe();
+}
+
+// ====== PUBLIC MENU ======
+async function loadAndRenderMenu() {
+  const today = todayStr();
+  document.getElementById("dateLabel").textContent = fmtDate(today);
+
+  if (!sb) {
+    const items = getLocalMenuForDate(activeCafeteriaId || DEFAULT_CAFETERIA_ID, today);
+    const dayStatus = getLocalMenuStatus(activeCafeteriaId || DEFAULT_CAFETERIA_ID, today);
+    renderMenu(items || [], dayStatus || { hidden: false, updated_at: new Date().toISOString() });
+    return;
+  }
+
+  const [{ data: items, error: itemsError }, { data: dayStatus }] = await Promise.all([
+    sb.from("menu_items").select("*").eq("cafeteria_id", activeCafeteriaId).eq("date", today).order("sort_order", { ascending: true }),
+    sb.from("menu_day_status").select("*").eq("cafeteria_id", activeCafeteriaId).eq("date", today).maybeSingle()
+  ]);
+
+  if (itemsError) {
+    console.error("menu load error", itemsError);
+    document.getElementById("menuWrap").innerHTML = '<div class="empty">Не удалось загрузить меню. Попробуйте обновить страницу.</div>';
+    document.getElementById("catnav").innerHTML = "";
+    document.getElementById("dishOfDay").hidden = true;
+    document.getElementById("comboBox").hidden = true;
+    document.getElementById("updatedLabel").hidden = true;
+    return;
+  }
+
+  renderMenu(items || [], dayStatus || null);
+}
+
+function renderMenu(items, dayStatus) {
+  const wrap = document.getElementById("menuWrap");
+  const nav = document.getElementById("catnav");
+  const dod = document.getElementById("dishOfDay");
+  const combo = document.getElementById("comboBox");
+  const updatedLabel = document.getElementById("updatedLabel");
+
+  if (dayStatus && dayStatus.hidden) {
     wrap.innerHTML = `<div class="empty">Меню временно обновляется.<br>Загляните чуть позже.</div>`;
     nav.innerHTML = "";
     dod.hidden = true;
@@ -249,23 +269,34 @@ function renderPublic() {
     return;
   }
 
-  if (doc.updatedAt) {
-    const sameDay = toISO(new Date(doc.updatedAt)) === todayStr();
-    updatedLabel.textContent = sameDay
-      ? `Меню обновлено сегодня в ${fmtTime(doc.updatedAt)}`
-      : `Меню обновлено ${fmtShort(toISO(new Date(doc.updatedAt)))} в ${fmtTime(doc.updatedAt)}`;
+  const visible = items.filter(it => !it.hidden);
+
+  if (!visible.length) {
+    wrap.innerHTML = `<div class="empty">Меню на сегодня пока не опубликовано.</div>`;
+    nav.innerHTML = "";
+    dod.hidden = true;
+    combo.hidden = true;
+    updatedLabel.hidden = true;
+    return;
+  }
+
+  if (dayStatus && dayStatus.updated_at) {
+    updatedLabel.textContent = `Меню обновлено сегодня в ${fmtTime(dayStatus.updated_at)}`;
     updatedLabel.hidden = false;
   } else {
     updatedLabel.hidden = true;
   }
 
-  const visibleCats = doc.categories
-    .map(c => ({ name: c.name, items: (c.items || []).filter(it => !it.hidden) }))
-    .filter(c => c.items.length);
+  // group by category, preserving first-seen order (items already sorted by sort_order)
+  const grouped = new Map();
+  visible.forEach(it => {
+    if (!grouped.has(it.category)) grouped.set(it.category, []);
+    grouped.get(it.category).push(it);
+  });
+  const cats = Array.from(grouped.entries()).map(([name, catItems]) => ({ name, items: catItems }));
 
   // dish of the day
-  let featured = [];
-  visibleCats.forEach(c => c.items.forEach(it => { if (it.featured) featured.push(it); }));
+  const featured = visible.filter(it => it.featured);
   if (featured.length) {
     document.getElementById("dodLabel").textContent = featured.length > 1 ? "Блюда дня" : "Блюдо дня";
     document.getElementById("dodList").innerHTML = featured.map(f => `
@@ -279,27 +310,20 @@ function renderPublic() {
   }
 
   // combo lunch total
-  let comboItems = [];
-  visibleCats.forEach(c => c.items.forEach(it => { if (it.combo) comboItems.push(it); }));
+  const comboItems = visible.filter(it => it.combo);
   if (comboItems.length) {
     document.getElementById("comboList").innerHTML = comboItems.map(it => `
       <span class="combo-pill">${esc(it.name)} — ${esc(formatPrice(it.price))}</span>`).join("");
-    const total = comboItems.reduce((sum, it) => sum + priceNum(it.price), 0);
+    const total = comboItems.reduce((sum, it) => sum + (Number(it.price) || 0), 0);
     document.getElementById("comboTotal").textContent = `Итого при выборе полного обеда: ${total} ₸`;
     combo.hidden = false;
   } else {
     combo.hidden = true;
   }
 
-  if (!visibleCats.length) {
-    wrap.innerHTML = `<div class="empty">Меню на этот день пока не опубликовано.</div>`;
-    nav.innerHTML = "";
-    return;
-  }
+  nav.innerHTML = cats.map(c => `<a href="#${slug(c.name)}">${esc(c.name)}</a>`).join("");
 
-  nav.innerHTML = visibleCats.map(c => `<a href="#${slug(c.name)}">${esc(c.name)}</a>`).join("");
-
-  wrap.innerHTML = visibleCats.map((c, ci) => `
+  wrap.innerHTML = cats.map((c, ci) => `
     <div class="cat" id="${slug(c.name)}" style="animation-delay:${ci * 90}ms">
       <div class="cat-head">${svg(c.name)}<h2>${esc(c.name)}</h2></div>
       ${c.items.map(it => `
@@ -328,244 +352,12 @@ function setupNavHighlight() {
   sections.forEach(s => s && obs.observe(s));
 }
 
-// ====== ADMIN ======
-let currentCats = [];
-let currentHidden = false;
-let editingDate = todayStr();
-
-function renderAdmin() {
-  document.getElementById("catsWrap").innerHTML = currentCats.map((c, ci) => `
-    <div class="acat">
-      <div class="acat-title">
-        <input value="${esc(c.name)}" data-ci="${ci}" class="catname" list="catlist">
-        <button class="btn ghost small delcat" data-ci="${ci}">Удалить категорию</button>
-      </div>
-      ${(c.items || []).map((it, ii) => `
-        <div class="aitem${it.hidden ? " row-hidden" : ""}" data-ci="${ci}" data-ii="${ii}">
-          <input placeholder="Блюдо" value="${esc(it.name)}" class="itname" list="dishlist">
-          <input placeholder="Вес, напр. 250" value="${esc(it.weight || "")}" class="itweight">
-          <input placeholder="Цена, напр. 990" value="${esc(it.price || "")}" class="itprice">
-          <button class="btn small star-toggle${it.featured ? " on" : ""}" title="Блюдо дня">★</button>
-          <button class="btn small combo-toggle${it.combo ? " on" : ""}" title="Входит в комплексный обед">🍽</button>
-          <button class="btn small hide-toggle${it.hidden ? " on" : ""}" title="Скрыть блюдо">👁</button>
-          <button class="btn ghost small delitem" title="Удалить">✕</button>
-        </div>`).join("")}
-      <button class="btn ghost small additem" data-ci="${ci}">+ Блюдо</button>
-    </div>`).join("");
-  refreshDishList();
-  updateHideDayButton();
-}
-
-function updateHideDayButton() {
-  const btn = document.getElementById("toggleHideDay");
-  const note = document.getElementById("dayHiddenNote");
-  if (!btn) return;
-  btn.textContent = currentHidden ? "Показать меню на этот день" : "Скрыть меню на этот день";
-  note.textContent = currentHidden ? "Сейчас на сайте: «Меню временно обновляется»" : "";
-}
-
-function bindAdminEvents() {
-  const cw = document.getElementById("catsWrap");
-
-  cw.addEventListener("input", e => {
-    const t = e.target;
-    if (t.classList.contains("catname")) currentCats[t.dataset.ci].name = t.value;
-    const row = t.closest(".aitem");
-    if (!row) return;
-    const ci = row.dataset.ci, ii = row.dataset.ii;
-    if (t.classList.contains("itname")) {
-      currentCats[ci].items[ii].name = t.value;
-      const known = loadLibrary()[t.value];
-      if (known) {
-        if (!currentCats[ci].items[ii].weight) { currentCats[ci].items[ii].weight = known.weight; row.querySelector(".itweight").value = known.weight; }
-        if (!currentCats[ci].items[ii].price) { currentCats[ci].items[ii].price = known.price; row.querySelector(".itprice").value = known.price; }
-      }
-    }
-    if (t.classList.contains("itweight")) currentCats[ci].items[ii].weight = t.value;
-    if (t.classList.contains("itprice")) currentCats[ci].items[ii].price = t.value;
-  });
-
-  cw.addEventListener("click", e => {
-    if (e.target.classList.contains("delcat")) {
-      currentCats.splice(Number(e.target.dataset.ci), 1);
-      renderAdmin();
-      return;
-    }
-    if (e.target.classList.contains("additem")) {
-      currentCats[Number(e.target.dataset.ci)].items.push({ name: "", weight: "", price: "", featured: false, combo: false, hidden: false });
-      renderAdmin();
-      return;
-    }
-    const row = e.target.closest(".aitem");
-    if (!row) return;
-    const ci = Number(row.dataset.ci), ii = Number(row.dataset.ii);
-    if (e.target.classList.contains("delitem")) {
-      currentCats[ci].items.splice(ii, 1);
-      renderAdmin();
-    }
-    if (e.target.classList.contains("star-toggle")) {
-      currentCats[ci].items[ii].featured = !currentCats[ci].items[ii].featured;
-      renderAdmin();
-    }
-    if (e.target.classList.contains("combo-toggle")) {
-      currentCats[ci].items[ii].combo = !currentCats[ci].items[ii].combo;
-      renderAdmin();
-    }
-    if (e.target.classList.contains("hide-toggle")) {
-      currentCats[ci].items[ii].hidden = !currentCats[ci].items[ii].hidden;
-      renderAdmin();
-    }
-  });
-}
-
-function loadDayIntoAdmin(dateStr) {
-  editingDate = dateStr;
-  const days = loadAllDays();
-  const doc = days[dateStr];
-  currentCats = (doc && doc.categories) || [];
-  currentHidden = !!(doc && doc.hidden);
-  renderAdmin();
-}
-
-// ====== TV MODE ======
-function applyTvMode() {
-  const params = new URLSearchParams(location.search);
-  if (params.get("tv") === "1") {
-    document.body.classList.add("tv-mode");
-  }
-}
-
-// ====== CANTEEN SWITCHER ======
-function currentCanteenId() {
-  const saved = localStorage.getItem(CANTEEN_KEY);
-  return CANTEENS.some(c => c.id === saved) ? saved : CANTEENS[0].id;
-}
-
-function applyCanteen(id) {
-  const canteen = CANTEENS.find(c => c.id === id) || CANTEENS[0];
-  const title = document.getElementById("canteenTitle");
-  if (title) title.textContent = canteen.name;
-  const select = document.getElementById("canteenSelect");
-  if (select && select.value !== canteen.id) select.value = canteen.id;
-}
-
-function initCanteenSwitcher() {
-  const select = document.getElementById("canteenSelect");
-  if (!select) return;
-  select.innerHTML = CANTEENS.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("");
-  const activeId = currentCanteenId();
-  select.value = activeId;
-  applyCanteen(activeId);
-  select.addEventListener("change", () => {
-    localStorage.setItem(CANTEEN_KEY, select.value);
-    applyCanteen(select.value);
-  });
-}
-
 // ====== INIT ======
 document.addEventListener("DOMContentLoaded", () => {
-  ensureSeedData();
   applyTvMode();
-  initCanteenSwitcher();
-  renderPublic();
-  bindAdminEvents();
-  refreshDishList();
+  initCanteens();
 
-  const overlay = document.getElementById("overlay");
-  const loginBox = document.getElementById("loginBox");
-  const editBox = document.getElementById("editBox");
-  const dateInput = document.getElementById("dateInput");
-  dateInput.value = todayStr();
-
-  document.getElementById("adminBtn").onclick = () => {
-    overlay.classList.add("open");
-    if (sessionStorage.getItem("concordAdmin") === "1") {
-      loginBox.style.display = "none";
-      editBox.style.display = "block";
-      loadDayIntoAdmin(dateInput.value);
-    } else {
-      loginBox.style.display = "block";
-      editBox.style.display = "none";
-    }
-  };
-
-  document.getElementById("closeAdmin").onclick = () => overlay.classList.remove("open");
-
-  document.getElementById("loginBtn").onclick = () => {
-    const val = document.getElementById("adminPass").value;
-    if (val === ADMIN_PASSWORD) {
-      sessionStorage.setItem("concordAdmin", "1");
-      loginBox.style.display = "none";
-      editBox.style.display = "block";
-      loadDayIntoAdmin(dateInput.value);
-    } else {
-      document.getElementById("loginError").textContent = "Неверный пароль.";
-    }
-  };
-
-  document.getElementById("adminPass").addEventListener("keydown", e => {
-    if (e.key === "Enter") document.getElementById("loginBtn").click();
-  });
-
-  document.getElementById("logoutBtn").onclick = () => {
-    sessionStorage.removeItem("concordAdmin");
-    overlay.classList.remove("open");
-  };
-
-  document.getElementById("loadDay").onclick = () => loadDayIntoAdmin(dateInput.value);
-
-  document.getElementById("copyYesterday").onclick = () => {
-    const d = parseISO(dateInput.value);
-    d.setDate(d.getDate() - 1);
-    const prev = toISO(d);
-    const days = loadAllDays();
-    currentCats = JSON.parse(JSON.stringify((days[prev] && days[prev].categories) || []));
-    renderAdmin();
-  };
-
-  document.getElementById("toggleHideDay").onclick = () => {
-    currentHidden = !currentHidden;
-    updateHideDayButton();
-  };
-
-  document.getElementById("addCat").onclick = () => {
-    const input = document.getElementById("newCatName");
-    const v = input.value.trim();
-    if (!v) return;
-    currentCats.push({ name: v, items: [] });
-    input.value = "";
-    renderAdmin();
-  };
-
-  document.getElementById("saveDay").onclick = () => {
-    const days = loadAllDays();
-    days[editingDate] = {
-      date: editingDate,
-      categories: currentCats,
-      hidden: currentHidden,
-      updatedAt: new Date().toISOString()
-    };
-    saveAllDays(days);
-    currentCats.forEach(c => (c.items || []).forEach(it => rememberDish(it.name, it.weight, it.price)));
-    refreshDishList();
-    const st = document.getElementById("saveStatus");
-    st.textContent = "Сохранено ✓";
-    setTimeout(() => (st.textContent = ""), 2000);
-    if (editingDate === viewingDate) renderPublic();
-  };
-
-  document.getElementById("restoreDefaults").onclick = () => {
-    if (!confirm("Это заменит все сохранённые меню демонстрационными данными. Продолжить?")) return;
-    const seed = buildSeed();
-    saveAllDays(seed.days);
-    localStorage.setItem(LIBRARY_KEY, JSON.stringify(seed.lib));
-    viewingDate = todayStr();
-    dateInput.value = todayStr();
-    loadDayIntoAdmin(dateInput.value);
-    refreshDishList();
-    renderPublic();
-    const st = document.getElementById("saveStatus");
-    st.textContent = "Восстановлено ✓";
-    setTimeout(() => (st.textContent = ""), 2000);
-  };
+  // Safety net: catches midnight rollover to the next day even if nothing
+  // changed in the database (realtime only fires on actual writes).
+  setInterval(() => { if (activeCafeteriaId) loadAndRenderMenu(); }, 5 * 60 * 1000);
 });
