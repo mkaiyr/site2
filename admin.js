@@ -394,6 +394,7 @@ document.addEventListener("DOMContentLoaded", () => {
   checkSessionAndShow();
 
   document.getElementById("loginBtn").onclick = async () => {
+    if (!sb) return;
     const email = document.getElementById("loginEmail").value.trim();
     const password = document.getElementById("loginPass").value;
     document.getElementById("loginError").textContent = "";
@@ -420,7 +421,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("logoutBtn").onclick = async () => {
-    await sb.auth.signOut();
+    if (sb) await sb.auth.signOut();
     showLogin();
   };
 
@@ -437,6 +438,25 @@ document.addEventListener("DOMContentLoaded", () => {
     const d = parseISO(dateInput.value);
     d.setDate(d.getDate() - 1);
     const prev = toISO(d);
+    if (!sb) {
+      const items = getLocalMenuForDate(editingCafeteriaId, prev);
+      const grouped = new Map();
+      items.forEach(it => {
+        if (!grouped.has(it.category)) grouped.set(it.category, []);
+        grouped.get(it.category).push({
+          id: null,
+          name: it.name,
+          weight: it.weight || "",
+          price: it.price === null || it.price === undefined ? "" : String(it.price),
+          featured: !!it.featured,
+          combo: !!it.combo,
+          hidden: !!it.hidden
+        });
+      });
+      currentCats = Array.from(grouped.entries()).map(([name, catItems]) => ({ name, items: catItems }));
+      renderAdmin();
+      return;
+    }
     const { data: items, error } = await sb.from("menu_items")
       .select("*")
       .eq("cafeteria_id", editingCafeteriaId)

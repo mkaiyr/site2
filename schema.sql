@@ -72,7 +72,6 @@ create table if not exists admins (
 -- После создания каждого администратора в Authentication → Users
 -- добавьте его сюда командой (см. SETUP.md):
 --   insert into admins (user_id, full_name) values ('<uuid-пользователя>', 'Имя Фамилия');
-
 -- ------------------------------------------------------------
 -- 5. Автообновление updated_at
 -- ------------------------------------------------------------
@@ -138,10 +137,11 @@ drop policy if exists menu_items_admin_delete on menu_items;
 create policy menu_items_admin_delete on menu_items
   for delete using ( is_admin() );
 
--- menu_day_status: та же логика
+-- menu_day_status: статус дня должен быть виден посетителю всегда,
+-- иначе сайт не узнает, что весь день скрыт.
 drop policy if exists menu_day_status_public_read on menu_day_status;
 create policy menu_day_status_public_read on menu_day_status
-  for select using ( hidden = false or is_admin() );
+  for select using ( true );
 
 drop policy if exists menu_day_status_admin_insert on menu_day_status;
 create policy menu_day_status_admin_insert on menu_day_status
@@ -172,4 +172,9 @@ select * from (values
   ('kablan',  current_date, 'Гарнир',  'Пюре',    '200', 300::numeric, false, true, 3),
   ('kablan',  current_date, 'Напиток', 'Чай',     '250', 150::numeric, false, true, 4)
 ) as seed(cafeteria_id, date, category, name, weight, price, featured, combo, sort_order)
-where not exists (select 1 from menu_items where date = current_date);
+where not exists (
+  select 1
+  from menu_items existing
+  where existing.cafeteria_id = seed.cafeteria_id
+    and existing.date = seed.date
+);
