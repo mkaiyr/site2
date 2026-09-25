@@ -88,10 +88,51 @@ body{
   font-family:'Fraunces',Georgia,serif;
   font-size:clamp(2.6rem,7vw,4rem);
   font-weight:700;
-  margin:0 0 .4rem;
+  margin:0;
   line-height:1;
   opacity:0;
   animation:rise-in .7s .3s ease-out forwards;
+}
+.title-row{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:.5rem .9rem;
+  margin:0 0 .4rem;
+}
+.canteen-switcher{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  opacity:0;
+  animation:rise-in .7s .38s ease-out forwards;
+}
+.canteen-select{
+  appearance:none;
+  -webkit-appearance:none;
+  -moz-appearance:none;
+  font-family:inherit;
+  font-weight:600;
+  font-size:.85rem;
+  color:#F6EDDD;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(228,164,48,.45);
+  border-radius:999px;
+  padding:.4rem 2rem .4rem .9rem;
+  cursor:pointer;
+  max-width:100%;
+  transition:background .15s, border-color .15s;
+}
+.canteen-select:hover{background:rgba(255,255,255,.14)}
+.canteen-select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.canteen-select option{color:var(--ink);background:var(--card)}
+.canteen-chevron{
+  position:absolute;
+  right:.75rem;
+  top:50%;
+  transform:translateY(-50%);
+  color:var(--gold);
+  pointer-events:none;
 }
 .hero .date{
   font-size:1.02rem;
@@ -359,7 +400,7 @@ button.btn.ghost.danger:hover{background:#FBEAEA}
 .muted.small{font-size:.8rem}
 
 @media (prefers-reduced-motion: reduce){
-  .berries, .hero h1, .hero .date, .dish-of-day, .cat{animation:none !important; opacity:1 !important;}
+  .berries, .hero h1, .hero .date, .dish-of-day, .cat, .canteen-switcher{animation:none !important; opacity:1 !important;}
 }
 
 /* ---------- TV MODE ---------- */
@@ -380,6 +421,9 @@ body.tv-mode .combo-total{font-size:1.4rem}
   .berries{width:92px; top:-4px;}
   .hero{padding:2.6rem 1.2rem 2rem;}
   .hero h1{font-size:2.1rem;}
+  .title-row{gap:.4rem .6rem}
+  .canteen-select{font-size:.78rem;padding:.35rem 1.7rem .35rem .75rem}
+  .canteen-chevron{right:.6rem;width:12px;height:12px}
   .dish-of-day{width:100%;}
   .item{padding:.75rem .6rem}
   .item .name{font-size:.93rem}

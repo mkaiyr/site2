@@ -4,6 +4,14 @@ const ADMIN_PASSWORD = "concord2026";
 const STORAGE_KEY = "concordMenuDays"; // { "2026-09-24": { date, categories:[...], hidden, updatedAt }, ... }
 const LIBRARY_KEY = "concordDishLibrary"; // { "Суп мампар": { weight: "250", price: "490" }, ... }
 
+// ====== CANTEENS ======
+// Add more canteens here later — the switcher and <h1> update themselves from this list.
+const CANTEENS = [
+  { id: "concord", name: "Concord" },
+  { id: "kablan", name: "Kablan" }
+];
+const CANTEEN_KEY = "concordSelectedCanteen";
+
 // ====== ICONS ======
 const ICONS = {
   soup: '<path d="M4 12h16a8 8 0 0 1-16 0z"/><path d="M6 12V7M12 12V5M18 12V7" stroke-linecap="round"/>',
@@ -427,10 +435,38 @@ function applyTvMode() {
   }
 }
 
+// ====== CANTEEN SWITCHER ======
+function currentCanteenId() {
+  const saved = localStorage.getItem(CANTEEN_KEY);
+  return CANTEENS.some(c => c.id === saved) ? saved : CANTEENS[0].id;
+}
+
+function applyCanteen(id) {
+  const canteen = CANTEENS.find(c => c.id === id) || CANTEENS[0];
+  const title = document.getElementById("canteenTitle");
+  if (title) title.textContent = canteen.name;
+  const select = document.getElementById("canteenSelect");
+  if (select && select.value !== canteen.id) select.value = canteen.id;
+}
+
+function initCanteenSwitcher() {
+  const select = document.getElementById("canteenSelect");
+  if (!select) return;
+  select.innerHTML = CANTEENS.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("");
+  const activeId = currentCanteenId();
+  select.value = activeId;
+  applyCanteen(activeId);
+  select.addEventListener("change", () => {
+    localStorage.setItem(CANTEEN_KEY, select.value);
+    applyCanteen(select.value);
+  });
+}
+
 // ====== INIT ======
 document.addEventListener("DOMContentLoaded", () => {
   ensureSeedData();
   applyTvMode();
+  initCanteenSwitcher();
   renderPublic();
   bindAdminEvents();
   refreshDishList();
